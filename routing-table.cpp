@@ -23,6 +23,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <iostream>
+
 namespace simple_router {
 
 /* IMPLEMENTED BEGIN */
@@ -53,7 +55,7 @@ RoutingTable::lookup(uint32_t ip) const
         mask_to_return = it->mask;
         entry_to_return = *it;
       } else if (it->mask > mask_to_return) { // Entry mask is greater, replace
-        entryFound = true;
+        entry_to_return = *it;
         mask_to_return = it->mask;
       }
     } // endif(masked_entry == masked_ip)
