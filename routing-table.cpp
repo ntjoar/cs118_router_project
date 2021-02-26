@@ -25,21 +25,48 @@
 
 namespace simple_router {
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-// IMPLEMENT THIS METHOD
+/* IMPLEMENTED BEGIN */
+
+/* 
+ * Implement a longest prefix matching algorithm 
+ */
 RoutingTableEntry
 RoutingTable::lookup(uint32_t ip) const
 {
+  /*
+   * We want to route using Longest Prefix Matching Algorithm
+   * We can do this by going through thhe m_entries list
+   * Find matching and replace should one mask be greater than what we have
+   * Another route we can take is sorting first then finding entries,
+   * Would make code shorter but less efficient
+   */
+  bool entryFound = false;
+  RoutingTableEntry entry_to_return;
+  uint32_t mask_to_return;
 
-  // FILL THIS IN
+  for(auto it = m_entries.begin(); it != m_entries.end(); it++) {
+    uint32_t masked_ip = it->mask & ip;
+    uint32_t masked_entry = it->mask & it->dest;
+    if(masked_entry == masked_ip) { // IP is the same
+      if((!entryFound)) { // First value found
+        entryFound = true;
+        mask_to_return = it->mask;
+        entry_to_return = *it;
+      } else if (it->mask > mask_to_return) { // Entry mask is greater, replace
+        entryFound = true;
+        mask_to_return = it->mask;
+      }
+    } // endif(masked_entry == masked_ip)
+  } // endfor
 
-  throw std::runtime_error("Routing entry not found");
+  if(!entryFound) {
+    throw std::runtime_error("Routing entry not found");
+  } else {
+    return entry_to_return;
+  }
 }
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 
-// You should not need to touch the rest of this code.
+/* IMPLEMENTED END */
 
 bool
 RoutingTable::load(const std::string& file)
