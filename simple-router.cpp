@@ -125,17 +125,19 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
     return;
   }
 
-  std::cerr << getRoutingTable() << std::endl;
+  // std::cerr << getRoutingTable() << std::endl;
   /* Provided END */
 
   /* Check broadcast address */
   std::string broadcast_addr = "ff:ff:ff:ff:ff:ff";
   if(!((macToString(packet) == macToString(iface->addr)) ||
        (macToString(packet) == broadcast_addr))) {
-    std::cerr << "Packet is not this router's responsiblity...";
+    std::cerr << "Packet is not this router's responsiblity..." << std::endl;
+    std::cerr << "---" << std::endl << std::endl;
     return;
   }
 
+  std::cerr << ethertype((const uint8_t*)packet.data()) << std::endl;
   if(ethertype((const uint8_t*)packet.data()) == ethertype_ip) {
     /* Variables for this */
     Buffer orig_packet_copy(packet);
@@ -145,6 +147,7 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
     size_t min_packet_size = sizeof(ethernet_hdr) + sizeof(ip_hdr);
     if((packet.size() < min_packet_size) || (header->ip_len < sizeof(ip_hdr))){
       std::cerr << "Error: IP packet does not meet minimum size requirements." << std::endl;
+      std::cerr << "---" << std::endl << std::endl;
       return;
     }
 
@@ -154,6 +157,7 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
     header->ip_sum = 0;
     if(checksum != cksum(header, sizeof(ip_hdr))) {
       std::cerr << "Error: Bad checksum. IP packet header is corrupted." << std::endl;
+      std::cerr << "---" << std::endl << std::endl;
       return;
     }
 
@@ -169,9 +173,14 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
           Buffer echo_reply(packet);
           prepareEcho(echo_reply);
           sendPacket(echo_reply, iface->name);
+          
+          std::cerr << "Send to " << iface->name << std::endl;
+          std::cerr << "---" << std::endl << std::endl;
           return;
         }
       } else if(header->ip_dst == this_iface.ip){ // Ignore other packets destined for us
+        std::cerr << "header->ip_dst == this_iface.ip == " << ipToString(this_iface.ip) << std::endl;
+        std::cerr << "---" << std::endl << std::endl;
         return;
       }
     }
@@ -182,6 +191,7 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
     const Interface* for_iface = findIfaceByName(route_ent.ifName);
     std::shared_ptr<ArpEntry> arp_entry = m_arp.lookup(header->ip_dst);
 
+    // std::cerr << "Sending to " << ipToString(header->ip_dst) << std::endl;
     /* Get address to send it to */
     if(arp_entry == nullptr) {
       m_arp.queueRequest(header->ip_dst, orig_packet_copy, for_iface->name);
@@ -206,6 +216,7 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
       req_arp_header->arp_sip = for_iface->ip;
       req_arp_header->arp_tip = header->ip_dst;
 
+      // std::cerr << "ARP=nullptr: Send to " << for_iface->name << std::endl;
       sendPacket(req_buf, for_iface->name);
     } else {
       ethernet_hdr* temp = (ethernet_hdr*)(orig_packet_copy.data());
@@ -213,10 +224,12 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
       memcpy(temp->ether_dhost, arp_entry->mac.data(), ETHER_ADDR_LEN);
       memcpy(temp->ether_shost, for_iface->addr.data(), ETHER_ADDR_LEN);
 
+      // std::cerr << "ARP!=nullptr: Send to " << for_iface->name << std::endl;
       sendPacket(orig_packet_copy, for_iface->name);
     }
+    std::cerr << "---" << std::endl << std::endl;
     return;
-  } else if(ethertype((const uint8_t*)packet.data()) == ethertype_arp) {
+  } else if(ethertype((const uint8_t*)packet.data()) == ethertype_arp) { // Need this so we can handle first two pings
     /* Get arp data and set pointer */
     arp_hdr* arp_header = (arp_hdr*)(packet.data() + sizeof(ethernet_hdr));
     unsigned short arp_oper = ntohs(arp_header->arp_op);
@@ -245,17 +258,18 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
         arp_head->arp_hrd = htons(arp_hrd_ethernet);
         arp_head->arp_pln = 4;
 
+        memcpy(arp_head->arp_tha, BroadcastEtherAddr, ETHER_ADDR_LEN);
         memcpy(arp_head->arp_sha, iface->addr.data(), ETHER_ADDR_LEN);
-        memcpy(arp_head->arp_tha, &(arp_header->arp_sha), ETHER_ADDR_LEN);
         arp_head->arp_sip = iface->ip;
         arp_head->arp_tip = arp_header->arp_sip;
 
         sendPacket(req_buf, iface->name);
-
+        std::cerr << "Send to " << iface->name << std::endl;
+        std::cerr << "---" << std::endl << std::endl;
         return;
       }
-
       std::cerr << "Error: target IP does not match. Packet dropped" << std::endl;
+      std::cerr << "---" << std::endl << std::endl;
       return;
     } else if(arp_oper == arp_op_reply) {
       std::cerr << "Handling ARP Reply" << std::endl;
@@ -269,14 +283,16 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
 
       if(arp_rep_map != nullptr) { // ensure we have good data
         std::list<PendingPacket>::const_iterator iter = arp_rep_map->packets.begin();
+        std::cerr << "Send to " << iter->iface << std::endl;
         sendPacket(iter->packet,iter->iface);
         m_arp.removeRequest(arp_rep_map);
       }
-
+      std::cerr << "---" << std::endl << std::endl;
       return;
     }
   } 
 
+  std::cerr << "---" << std::endl << std::endl;
   return;
 }
 
