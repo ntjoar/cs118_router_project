@@ -213,69 +213,11 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
       memcpy(temp->ether_dhost, arp_entry->mac.data(), ETHER_ADDR_LEN);
       memcpy(temp->ether_shost, for_iface->addr.data(), ETHER_ADDR_LEN);
 
+      std::cerr << for_iface->name << std::endl;
       sendPacket(orig_packet_copy, for_iface->name);
     }
     return;
-  } else if(ethertype((const uint8_t*)packet.data()) == ethertype_arp) {
-    /* Get arp data and set pointer */
-    arp_hdr* arp_header = (arp_hdr*)(packet.data() + sizeof(ethernet_hdr));
-    unsigned short arp_oper = ntohs(arp_header->arp_op);
-
-    /* What type of operation are we handling */
-    if(arp_oper == arp_op_request) {
-      std::cerr << "Handling ARP Request" << std::endl;
-      if(arp_header->arp_tip == iface->ip) {
-        /* Create buffer */
-        uint8_t req_sz = sizeof(ethernet_hdr) + sizeof(arp_hdr);
-        Buffer req_buf(req_sz);
-        uint8_t* req_packet = (uint8_t *)req_buf.data();
-
-        ethernet_hdr* eth_head = (ethernet_hdr *)req_packet;
-        arp_hdr* arp_head = (arp_hdr *)(req_packet + sizeof(ethernet_hdr));
-
-        /* Create our ethernet header */
-        memcpy(eth_head->ether_dhost, &(arp_header->arp_sha), ETHER_ADDR_LEN);
-        memcpy(eth_head->ether_shost, iface->addr.data(), ETHER_ADDR_LEN);
-        eth_head->ether_type = htons(ethertype_arp);
-
-        /* Create our ARP header */
-        arp_head->arp_hln = ETHER_ADDR_LEN;
-        arp_head->arp_pro = htons(ethertype_ip);
-        arp_head->arp_op = htons(arp_op_reply);
-        arp_head->arp_hrd = htons(arp_hrd_ethernet);
-        arp_head->arp_pln = 4;
-
-        memcpy(arp_head->arp_sha, iface->addr.data(), ETHER_ADDR_LEN);
-        memcpy(arp_head->arp_tha, &(arp_header->arp_sha), ETHER_ADDR_LEN);
-        arp_head->arp_sip = iface->ip;
-        arp_head->arp_tip = arp_header->arp_sip;
-
-        sendPacket(req_buf, iface->name);
-
-        return;
-      }
-
-      std::cerr << "Error: target IP does not match. Packet dropped" << std::endl;
-      return;
-    } else if(arp_oper == arp_op_reply) {
-      std::cerr << "Handling ARP Reply" << std::endl;
-
-      /* Get source hardware */
-      Buffer arp_rep_mac(ETHER_ADDR_LEN);
-      memcpy(arp_rep_mac.data(), arp_header->arp_sha, ETHER_ADDR_LEN);
-
-      /* Add IP to MAC mapping in cache */
-      std::shared_ptr<ArpRequest> arp_rep_map = m_arp.insertArpEntry(arp_rep_mac, arp_header->arp_sip);
-
-      if(arp_rep_map != nullptr) { // ensure we have good data
-        std::list<PendingPacket>::const_iterator iter = arp_rep_map->packets.begin();
-        sendPacket(iter->packet,iter->iface);
-        m_arp.removeRequest(arp_rep_map);
-      }
-
-      return;
-    }
-  } 
+  }
 
   return;
 }
