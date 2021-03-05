@@ -258,8 +258,8 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
         arp_head->arp_hrd = htons(arp_hrd_ethernet);
         arp_head->arp_pln = 4;
 
-        memcpy(arp_head->arp_tha, BroadcastEtherAddr, ETHER_ADDR_LEN);
         memcpy(arp_head->arp_sha, iface->addr.data(), ETHER_ADDR_LEN);
+        memcpy(arp_head->arp_tha, &(arp_header->arp_sha), ETHER_ADDR_LEN);
         arp_head->arp_sip = iface->ip;
         arp_head->arp_tip = arp_header->arp_sip;
 
