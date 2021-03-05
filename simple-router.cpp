@@ -125,7 +125,7 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
     return;
   }
 
-  // std::cerr << getRoutingTable() << std::endl;
+  std::cerr << getRoutingTable() << std::endl;
   /* Provided END */
 
   /* Check broadcast address */
@@ -136,7 +136,8 @@ SimpleRouter::handlePacket(const Buffer& packet, const std::string& inIface)
     std::cerr << "---" << std::endl << std::endl;
     return;
   }
-
+  
+  std::cerr << "-" << std::endl;
   std::cerr << ethertype((const uint8_t*)packet.data()) << std::endl;
   if(ethertype((const uint8_t*)packet.data()) == ethertype_ip) {
     /* Variables for this */
