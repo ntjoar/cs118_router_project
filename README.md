@@ -25,10 +25,13 @@ When POX controller is restrated, the simpler router needs to be manually stoppe
 
 This implementation is based on the original code for Stanford CS144 lab3 (https://bitbucket.org/cs144-1617/lab3).
 
-## TODO
+## Names
 
-    ###########################################################
-    ##                                                       ##
-    ## REPLACE CONTENT OF THIS FILE WITH YOUR PROJECT REPORT ##
-    ##                                                       ##
-    ###########################################################
+    Nathan Tjoar (005081232)
+    Zetao Wu (805170781)
+
+## Tutorials used
+
+    Checksum: http://www.networksorcery.com/enp/protocol/icmp/msg8.htm
+    ARP: https://www.oreilly.com/library/view/packet-guide-to/9781449308094/ch04.html
+    Ping: http://www.firewall.cx/networking-topics/protocols/icmp-protocol/152-icmp-echo-ping.html
