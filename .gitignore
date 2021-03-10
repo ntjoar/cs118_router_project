@@ -3,3 +3,6 @@ rgbloader/*
 build/*
 router
 *.o
+client
+server
+*.tar.gz
